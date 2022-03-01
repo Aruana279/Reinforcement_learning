@@ -1,28 +1,20 @@
-import java.util.HashMap;
-
 public class gWorld {
     private int height;
     private int width;
-    private HashMap<Coord,Double> map;
-    private double[][] gWorld;
+    private double[][] grid;
 
-    public gWorld(int height, int width, HashMap<Coord,Double> map, double[][] gWorld) {
+    public gWorld(int height, int width, double[][] grid) {
         this.height = height;
         this.width = width;
-        this.map = map;
-        this.gWorld = gWorld;
-        //System.out.println(Arrays.deepToString(maze));
+        this.grid = grid;
     }
-
     public int getHeight() {
         return height;
     }
-
     public int getWidth() {
         return width;
     }
-
-    public double[][] getGWorld() {
-        return gWorld;
+    public double[][] getGrid() {
+        return grid;
     }
 }

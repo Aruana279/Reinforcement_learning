@@ -1,144 +1,143 @@
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
 public class qLearn {
-    private final double gamma = 0.9;
-    private double time;
-    private double prob;
-    private double costOfMove;
-    private gWorld gWorld;
-    private int stateCount;
-    private int actionCount;
-    private double startTime;
     private double[][] R;
     private double[][] Q;
+    private double givenTime;
+    private double givenProbability;
+    private gWorld grid;
+    private int statesCount;
+    private final double alpha = 0.1;
+    private final double gamma = 0.9;
+    private double startTime;
 
-    public qLearn(gWorld gWorld, double time, double probabilityOfDesired, double reward) {
-        this.gWorld = gWorld;
-        this.time = time;
-        this.prob = probabilityOfDesired;
-        this.costOfMove = reward;
-        this.stateCount = gWorld.getHeight() * gWorld.getWidth();
-        initialisation();
-        run();
+
+    public qLearn(gWorld gWorld, double givenTime, double givenProbability, double reward) {
+        this.grid = gWorld;
+        this.givenTime = givenTime;
+        this.givenProbability = givenProbability;
+        this.statesCount = gWorld.getHeight() * gWorld.getWidth();
+        init();
+        qLearnImplement();
     }
 
-    public void run(){
+    public void qLearnImplement(){
         startTime = getCurrentTimeInSeconds();
-        while((System.currentTimeMillis() / 1000.0) - startTime < time){
-            //TODO: Implement Q Learn Algorithm here
-            int currentLocation = getStartLocation();
-            while (!isTerminalState(currentLocation)){
-                System.out.print(Arrays.deepToString(R));
-                int[] actionsFromCurrent = possibleActionsFromCurrent(currentLocation);
-                Random random = new Random();
+        Random rand = new Random();
+        while((System.currentTimeMillis() / 1000.0) - startTime < givenTime){
+            int currentNode = getstartTimeLocation();
+            while (!isFinalNode(currentNode)){
+                double probability = rand.nextDouble();
+                if (probability < 0.1){
+                    int[] actionsFromCurrentState = possibleActions(currentNode);
 
-                // Random direction exploration
-                if (random.nextDouble() < 0.1){
+                    int index = rand.nextInt(actionsFromCurrentState.length);
+                    int nextNode = actionsFromCurrentState[index];
 
-                    // Exploration
-                    int index = random.nextInt(actionsFromCurrent.length);
-                    int nextLocation = actionsFromCurrent[index];
+                    double q = Q[currentNode][nextNode];
+                    double maxQ = randomQ(nextNode);
+                    int r = (int)R[currentNode][nextNode];
 
-                    // Retrieving the values for Q algorithm formula
-                    double q = Q[currentLocation][nextLocation];
-                    // Note: We're using Random direction
-                    double maxQ = randomQ(nextLocation);
-                    double reward = R[currentLocation][nextLocation];
+                    double value = q + alpha * (r + gamma * maxQ - q);
+                    Q[currentNode][nextNode] = value;
 
-                    // Calculating Q Value for Current Node
-                    double qValue = q + prob *(reward + gamma + maxQ - q);
-                    Q[currentLocation][nextLocation] = qValue;
-
-                    // Assigning new Location for Current Node
-                    currentLocation = nextLocation;
+                    currentNode = nextNode;
                 } else {
-                    // Exploration
-                    System.out.println("Length of possible actions: "+actionsFromCurrent.length);
-                    int index = random.nextInt(actionsFromCurrent.length);
-                    int nextLocation = actionsFromCurrent[index];
+                    int[] actionsFromCurrentState = possibleActions(currentNode);
 
-                    // Retrieving the values for Q algorithm formula
-                    double q = Q[currentLocation][nextLocation];
-                    double maxQ = maxQ(nextLocation);
-                    double reward = R[currentLocation][nextLocation];
+                    int index = rand.nextInt(actionsFromCurrentState.length);
+                    int nextNode = actionsFromCurrentState[index];
 
-                    // Calculating Q Value for Current Node
-                    double qValue = q + prob *(reward + gamma + maxQ - q);
-                    Q[currentLocation][nextLocation] = qValue;
+                    double q = Q[currentNode][nextNode];
+                    double maxQ = maxQ(nextNode);
+                    int r = (int)R[currentNode][nextNode];
 
-                    // Assigning new Location for Current Node
-                    currentLocation = nextLocation;
+                    double value = q + alpha * (r + gamma * maxQ - q);
+                    Q[currentNode][nextNode] = value;
+
+                    currentNode = nextNode;
                 }
             }
         }
+        //System.out.println("Training finished in " + ((System.currentTimeMillis() / 1000.0) - startTime) +" seconds");
         printQ();
+        printMove();
     }
 
-    private void initialisation(){
-        R = new double[stateCount][stateCount];
-        Q = new double[stateCount][stateCount];
+    private void init(){
+        R = new double[statesCount][statesCount];
+        Q = new double[statesCount][statesCount];
 
-        for (int i = 0; i < stateCount; i++){
+        int i = 0;
+        int j = 0;
+        // We will navigate through the reward matrix R using k index
+        for (int a = 0; a < statesCount; a++) {
 
-            int y = i / gWorld.getWidth();
-            int x = i - y * gWorld.getWidth();
+            // We will navigate with i and j through the maze, so we need
+            // to translate a into i and j
+            i = a / grid.getWidth();
+            j = a - i * grid.getWidth();
 
-
-
-            // Populating Reward Table with -1 value for impossible transitions
-            for (int k = 0; k < stateCount; k++){
-                R[i][k] = -1;
+            // Fill in the reward matrix with -1
+            for (int s = 0; s < statesCount; s++) {
+                R[a][s] = -1;
             }
 
-            // If not final state try to move all possible directions
-            if (gWorld.getGWorld()[y][x] <=0){
+            // If not in final state or a wall try moving in all directions in the maze
+            if (grid.getGrid()[i][j] != 'F') {
 
-                // Going left
-                int left = x - 1;
-                if (left >= 0) {
-                    int newY = y * gWorld.getWidth() + left;
-                    if (gWorld.getGWorld()[y][left] == 0.0) {
-                        R[i][newY] = 0.0;
+                // Try to move left in the maze
+                int goLeft = j - 1;
+                if (goLeft >= 0) {
+                    int target = i * grid.getWidth() + goLeft;
+                    if (grid.getGrid()[i][goLeft] == 0) {
+                        R[a][target] = 0;
+                    } else if (grid.getGrid()[i][goLeft] > 0) {
+                        R[a][target] = grid.getGrid()[i][goLeft];
                     } else {
-                        R[i][newY] = gWorld.getGWorld()[y][left];
+                        R[a][target] = grid.getGrid()[i][goLeft];
                     }
                 }
 
-                // Going right
-                int right = x + 1;
-                if (right < gWorld.getWidth()) {
-                    int newY = y * gWorld.getWidth() + right;
-                    if (gWorld.getGWorld()[y][right] == 0.0) {
-                        R[i][newY] = 0.0;
+                // Try to move right in the maze
+                int goRight = j + 1;
+                if (goRight < grid.getWidth()) {
+                    int target = i * grid.getWidth() + goRight;
+                    if (grid.getGrid()[i][goRight] == 0) {
+                        R[a][target] = 0;
+                    } else if (grid.getGrid()[i][goRight] > 0) {
+                        R[a][target] = grid.getGrid()[i][goRight];
                     } else {
-                        R[i][newY] = gWorld.getGWorld()[y][right];
+                        R[a][target] = grid.getGrid()[i][goRight];
                     }
                 }
 
-                // Going up
-                int up = y - 1;
-                if (up >= 0) {
-                    int newY = up * gWorld.getWidth() + x;
-                    if (gWorld.getGWorld()[up][x] == 0.0) {
-                        R[i][newY] = 0.0;
+                // Try to move up in the maze
+                int goUp = i - 1;
+                if (goUp >= 0) {
+                    int target = goUp * grid.getWidth() + j;
+                    if (grid.getGrid()[goUp][j] == 0) {
+                        R[a][target] = 0;
+                    } else if (grid.getGrid()[goUp][j] > 0) {
+                        R[a][target] = grid.getGrid()[goUp][j];
                     } else {
-                        R[i][newY] = gWorld.getGWorld()[up][x];
+                        R[a][target] = grid.getGrid()[goUp][j];
                     }
                 }
 
-                // Going down
-                int down = y + 1;
-                if (down < gWorld.getHeight()) {
-                    int newY = down * gWorld.getWidth() + x;
-                    if (gWorld.getGWorld()[down][x] == 0.0) {
-                        R[i][newY] = 0.0;
+                // Try to move down in the maze
+                int goDown = i + 1;
+                if (goDown < grid.getHeight()) {
+                    int target = goDown * grid.getWidth() + j;
+                    if (grid.getGrid()[goDown][j] == 0) {
+                        R[a][target] = 0;
+                    } else if (grid.getGrid()[goDown][j] > 0) {
+                        R[a][target] = grid.getGrid()[goDown][j];
                     } else {
-                        R[i][newY] = gWorld.getGWorld()[down][x];
+                        R[a][target] = grid.getGrid()[goDown][j];
                     }
                 }
-
             }
         }
         copyQ();
@@ -148,15 +147,15 @@ public class qLearn {
 
     // Copying R table values to Q table
     private void copyQ() {
-        for (int i = 0; i < stateCount; i++){
-            for(int j = 0; j < stateCount; j++){
+        for (int i = 0; i < statesCount; i++){
+            for(int j = 0; j < statesCount; j++){
                 Q[i][j] = R[i][j];
             }
         }
     }
 
     private double randomQ(int nextLocation){
-        int[] actionsFromCurrent = possibleActionsFromCurrent(nextLocation);
+        int[] actionsFromCurrent = possibleActions(nextLocation);
         Random random = new Random();
         int randomIndex = random.nextInt(actionsFromCurrent.length);
         double value = Q[nextLocation][randomIndex];
@@ -164,7 +163,7 @@ public class qLearn {
     }
 
     private double maxQ(int nextLocation) {
-        int[] actionsFromCurrent = possibleActionsFromCurrent(nextLocation);
+        int[] actionsFromCurrent = possibleActions(nextLocation);
 
         double maxValue = -10;
         for (int nextAction : actionsFromCurrent) {
@@ -180,25 +179,22 @@ public class qLearn {
         return System.currentTimeMillis() / 1000.0;
     }
 
-    // Getting random start location within the Q table
-    private int getStartLocation() {
+    // Getting random startTime location within the Q table
+    private int getstartTimeLocation() {
         Random random = new Random();
-        return random.nextInt(stateCount);
-   }
-
-   // Terminal state when value is bigger than 0
-    private boolean isTerminalState(int coord){
-        int y = coord / gWorld.getWidth();
-        int x = coord - y * gWorld.getWidth();
-//        System.out.println("y = " + y + "; x = " + x);
-//        System.out.print("Maze value: " + lookupTable.getMaze()[y][x]);
-        return gWorld.getGWorld()[y][x] > 0;
+        return random.nextInt(statesCount);
     }
 
-    // All possible actions from state
-    int[] possibleActionsFromCurrent(int coord){
+    // Terminal state when value is bigger than 0
+    private boolean isFinalNode(int coord){
+        int y = coord / grid.getWidth();
+        int x = coord - y * grid.getWidth();
+        return grid.getGrid()[y][x] > 0;
+    }
+    //possible actions for current location/node
+    int[] possibleActions(int coord){
         ArrayList<Integer> actions = new ArrayList<>();
-        for (int i = 0; i < stateCount; i++){
+        for (int i = 0; i < statesCount; i++){
             if (R[coord][i] != -1){
                 actions.add(i);
             }
@@ -215,6 +211,31 @@ public class qLearn {
             }
             System.out.println();
         }
+    }
+
+    void printMove() {
+        System.out.println("\nPrint policy");
+        for (int i = 0; i < statesCount; i++) {
+            System.out.println("From node" + i + " go to node " + getMoveFromCurrent(i));
+        }
+    }
+
+    int getMoveFromCurrent(int state) {
+        int[] actionsFromState = possibleActions(state);
+
+        double maxValue = Double.MIN_VALUE;
+        int policyGotoState = state;
+
+        // Pick to move to the state that has the maximum Q value
+        for (int nextNode : actionsFromState) {
+            double value = Q[state][nextNode];
+
+            if (value > maxValue) {
+                maxValue = value;
+                policyGotoState = nextNode;
+            }
+        }
+        return policyGotoState;
     }
 
 }
