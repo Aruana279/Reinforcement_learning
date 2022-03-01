@@ -216,7 +216,7 @@ public class qLearn {
     void printMove() {
         System.out.println("\nPrint policy");
         for (int i = 0; i < statesCount; i++) {
-            System.out.println("From node" + i + " go to node " + getMoveFromCurrent(i));
+            System.out.println("From node " + i + " go to node " + getMoveFromCurrent(i));
         }
     }
 
