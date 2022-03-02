@@ -1,5 +1,8 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
+
+import static java.lang.Math.*;
 
 public class qLearn {
     private double[][] R;
@@ -19,44 +22,81 @@ public class qLearn {
         this.givenProbability = givenProbability;
         this.statesCount = gWorld.getHeight() * gWorld.getWidth();
         init();
-        qLearnImplement();
+        qLearnImplement(givenProbability);
     }
 
-    public void qLearnImplement(){
+    public void qLearnImplement(double epsilon){
         startTime = getCurrentTimeInSeconds();
         Random rand = new Random();
         while((System.currentTimeMillis() / 1000.0) - startTime < givenTime){
             int currentNode = getstartTimeLocation();
             while (!isFinalNode(currentNode)){
+                double maxQ, q;
+                int nextNode;
+                int[] actionsFromCurrentState;
                 double probability = rand.nextDouble();
                 if (probability < 0.1){
-                    int[] actionsFromCurrentState = possibleActions(currentNode);
+                    actionsFromCurrentState = possibleActions(currentNode);
 
                     int index = rand.nextInt(actionsFromCurrentState.length);
-                    int nextNode = actionsFromCurrentState[index];
+                    nextNode = actionsFromCurrentState[index];
 
-                    double q = Q[currentNode][nextNode];
-                    double maxQ = randomQ(nextNode);
-                    int r = (int)R[currentNode][nextNode];
+                    q = Q[currentNode][nextNode];
+                    maxQ = randomQ(nextNode);
 
-                    double value = q + alpha * (r + gamma * maxQ - q);
-                    Q[currentNode][nextNode] = value;
-
-                    currentNode = nextNode;
                 } else {
-                    int[] actionsFromCurrentState = possibleActions(currentNode);
+                    actionsFromCurrentState = possibleActions(currentNode);
 
-                    int index = rand.nextInt(actionsFromCurrentState.length);
-                    int nextNode = actionsFromCurrentState[index];
+                    int index = 0, currmax = 0;
+                    double[] currentArray = Q[currentNode];
 
-                    double q = Q[currentNode][nextNode];
-                    double maxQ = maxQ(nextNode);
+                    for (int i = 0; i < actionsFromCurrentState.length; i++) {
+                        if (currentArray[actionsFromCurrentState[i]] >= currentArray[currmax]){
+                            currmax = actionsFromCurrentState[i];
+                            index = i;
+                        }
+                    }
+                    nextNode = actionsFromCurrentState[index];
+
+                    q = Q[currentNode][nextNode];
+                    maxQ = maxQ(nextNode);
+
+                }
+                if (rand.nextDouble() <= 0.9) {
                     int r = (int)R[currentNode][nextNode];
 
                     double value = q + alpha * (r + gamma * maxQ - q);
                     Q[currentNode][nextNode] = value;
 
                     currentNode = nextNode;
+                }else{
+                    if (rand.nextDouble() <= .5){ //deflect right
+                        int targetNode = currentNode;
+                        for (int i = 0; i < actionsFromCurrentState.length - 1; i++) {
+                            int difference = abs(actionsFromCurrentState[i] -actionsFromCurrentState[i+1] );
+                            if (difference == 2 || difference == 12){
+                                targetNode = max(actionsFromCurrentState[i], actionsFromCurrentState[i+1]);
+                            }
+                        }
+                        int r = (int)R[currentNode][targetNode];
+
+                        double value = q + alpha * (r + gamma * maxQ - q);
+                        Q[currentNode][targetNode] = value;
+                        currentNode = targetNode;
+                    }else{ //deflect left
+                        int targetNode = currentNode;
+                        for (int i = 0; i < actionsFromCurrentState.length - 1; i++) {
+                            int difference = abs(actionsFromCurrentState[i] -actionsFromCurrentState[i+1] );
+                            if (difference == 2 || difference == 12){
+                                targetNode = min(actionsFromCurrentState[i], actionsFromCurrentState[i+1]);
+                            }
+                        }
+                        int r = (int)R[currentNode][targetNode];
+
+                        double value = q + alpha * (r + gamma * maxQ - q);
+                        Q[currentNode][targetNode] = value;
+                        currentNode = targetNode;
+                    }
                 }
             }
         }
