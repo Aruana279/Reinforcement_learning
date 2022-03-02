@@ -97,6 +97,7 @@ public class qLearn {
                                         break;
                                     default:
                                         System.out.println("it didn't move");
+                                        break;
                                 }
                                 break;
                             case 1:
