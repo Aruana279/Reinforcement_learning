@@ -35,7 +35,7 @@ public class qLearn {
                 int nextNode;
                 int[] actionsFromCurrentState;
                 double probability = rand.nextDouble();
-                if (probability < 0.1){
+                if (probability < epsilon){
                     actionsFromCurrentState = possibleActions(currentNode);
 
                     int index = rand.nextInt(actionsFromCurrentState.length);
@@ -62,7 +62,7 @@ public class qLearn {
                     maxQ = maxQ(nextNode);
 
                 }
-                if (rand.nextDouble() <= 0.9) {
+                if (rand.nextDouble() <= .8) {
                     int r = (int)R[currentNode][nextNode];
 
                     double value = q + alpha * (r + gamma * maxQ - q);
@@ -70,32 +70,104 @@ public class qLearn {
 
                     currentNode = nextNode;
                 }else{
+                    int nexty = nextNode / grid.getWidth();
+                    int nextx = nextNode - nexty * grid.getWidth();
+                    int curry = currentNode / grid.getWidth();
+                    int currx = currentNode - curry * grid.getWidth();
+
+                    int diffx  = nextx - currx;
+                    int diffy = nexty - curry;
                     if (rand.nextDouble() <= .5){ //deflect right
-                        int targetNode = currentNode;
-                        for (int i = 0; i < actionsFromCurrentState.length - 1; i++) {
-                            int difference = abs(actionsFromCurrentState[i] -actionsFromCurrentState[i+1] );
-                            if (difference == 2 || difference == 12){
-                                targetNode = max(actionsFromCurrentState[i], actionsFromCurrentState[i+1]);
-                            }
+                        switch (diffx){
+                            case 0:
+                                switch (diffy){
+                                    case 1:
+                                        if (currx != 0) {
+                                            nextNode = currentNode - 1;
+                                        }else{
+                                            nextNode = currentNode;
+                                        }
+                                        break;
+                                    case -1:
+                                        if (currx != grid.getWidth()-1){
+                                                nextNode = currentNode + 1;
+                                        }else {
+                                            nextNode = currentNode;
+                                        }
+                                        break;
+                                    default:
+                                        System.out.println("it didn't move");
+                                }
+                                break;
+                            case 1:
+                                if (curry != grid.getHeight()-1){
+                                    nextNode = currentNode + 6;
+                                }else {
+                                    nextNode = currentNode;
+                                }
+                                break;
+                            case -1:
+                                if (curry != 0){
+                                    nextNode = currentNode - 6;
+                                }else {
+                                    nextNode = currentNode;
+                                }
+                                break;
+                            default:
+                                System.out.println("something went wrong with the deflection!");
+                                break;
                         }
-                        int r = (int)R[currentNode][targetNode];
+                        int r = (int)R[currentNode][nextNode];
 
                         double value = q + alpha * (r + gamma * maxQ - q);
-                        Q[currentNode][targetNode] = value;
-                        currentNode = targetNode;
+                        Q[currentNode][nextNode] = value;
+                        currentNode = nextNode;
+
                     }else{ //deflect left
-                        int targetNode = currentNode;
-                        for (int i = 0; i < actionsFromCurrentState.length - 1; i++) {
-                            int difference = abs(actionsFromCurrentState[i] -actionsFromCurrentState[i+1] );
-                            if (difference == 2 || difference == 12){
-                                targetNode = min(actionsFromCurrentState[i], actionsFromCurrentState[i+1]);
-                            }
+                        switch (diffx){
+                            case 0:
+                                switch (diffy){
+                                    case -1:
+                                        if (currx != 0) {
+                                            nextNode = currentNode - 1;
+                                        }else{
+                                            nextNode = currentNode;
+                                        }
+                                        break;
+                                    case 1:
+                                        if (currx != grid.getWidth()-1){
+                                            nextNode = currentNode + 1;
+                                        }else {
+                                            nextNode = currentNode;
+                                        }
+                                        break;
+                                    default:
+                                        System.out.println("it didn't move");
+                                }
+                                break;
+                            case -1:
+                                if (curry != grid.getHeight()-1){
+                                    nextNode = currentNode + 6;
+                                }else {
+                                    nextNode = currentNode;
+                                }
+                                break;
+                            case 1:
+                                if (curry != 0){
+                                    nextNode = currentNode - 6;
+                                }else {
+                                    nextNode = currentNode;
+                                }
+                                break;
+                            default:
+                                System.out.println("something went wrong with the deflection!");
+                                break;
                         }
-                        int r = (int)R[currentNode][targetNode];
+                        int r = (int)R[currentNode][nextNode];
 
                         double value = q + alpha * (r + gamma * maxQ - q);
-                        Q[currentNode][targetNode] = value;
-                        currentNode = targetNode;
+                        Q[currentNode][nextNode] = value;
+                        currentNode = nextNode;
                     }
                 }
             }
